@@ -1,0 +1,2472 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Velora</title>
+
+    <link rel="stylesheet" href="style.css">
+
+<style>
+.product-favorite { position:absolute; top:12px; right:12px; width:38px; height:38px; border-radius:50%; border:1px solid rgba(0,0,0,.12); background:rgba(255,255,255,.9); font-size:20px; cursor:pointer; z-index:2; }
+.product-detail { display:flex; flex-direction:column; gap:24px; }
+.product-detail-image img { width:100%; display:block; border-radius:18px; }
+.product-detail-info h1 { margin:8px 0 10px; }
+.product-detail-price { display:block; font-size:24px; margin-bottom:16px; }
+.product-detail-actions { display:flex; flex-direction:column; gap:10px; }
+.order-card { margin-bottom:14px; }
+    .checkout-stock { margin:7px 0 0; font-size:13px; opacity:.7; }
+</style>
+
+<style id="velora-next-features">
+.catalog-tools { display:flex; flex-direction:column; gap:12px; margin:0 0 24px; }
+.catalog-search { width:100%; box-sizing:border-box; padding:14px 16px; border:1px solid rgba(0,0,0,.12); border-radius:14px; background:#fff; font:inherit; outline:none; }
+.catalog-controls { display:flex; gap:10px; flex-wrap:wrap; }
+.catalog-filter, .catalog-sort { padding:11px 14px; border:1px solid rgba(0,0,0,.12); border-radius:12px; background:#fff; font:inherit; }
+.cart-badge { display:inline-flex; min-width:18px; height:18px; padding:0 5px; align-items:center; justify-content:center; border-radius:999px; background:#111; color:#fff; font-size:11px; line-height:1; margin-left:4px; }
+.stock-line { margin:8px 0 0; font-size:12px; opacity:.65; }
+.promo-banner { margin:0 0 18px; padding:12px 16px; border:1px solid rgba(0,0,0,.08); border-radius:14px; background:#222; color:#fff; text-align:center; font-size:13px; }
+
+.stock-out { opacity:.45; }
+.add-button:disabled { opacity:.45; cursor:not-allowed; }
+.velora-toast { position:fixed; left:50%; bottom:88px; transform:translate(-50%,20px); opacity:0; pointer-events:none; z-index:1000; background:#111; color:#fff; padding:12px 16px; border-radius:12px; transition:.22s ease; font-size:14px; }
+.velora-toast.show { opacity:1; transform:translate(-50%,0); }
+.recent-section { margin-top:32px; }
+.recent-title { margin-bottom:14px; }
+.size-picker { margin:18px 0; }
+.size-picker label { display:block; margin-bottom:10px; font-weight:600; }
+.detail-size-buttons { display:flex; gap:8px; flex-wrap:wrap; }
+.detail-size-button { padding:10px 14px; border:1px solid rgba(0,0,0,.14); background:#fff; border-radius:10px; cursor:pointer; }
+.detail-size-button.selected { background:#111; color:#fff; border-color:#111; }
+.recommendations { margin-top:32px; }
+@media (max-width:600px){ .catalog-controls > * { flex:1 1 140px; } }
+
+
+.checkout-extra { display:flex; flex-direction:column; gap:14px; margin-top:18px; }
+.delivery-options { display:grid; gap:8px; }
+.delivery-option { display:flex; align-items:center; gap:10px; padding:12px 14px; border:1px solid rgba(0,0,0,.12); border-radius:12px; background:#fff; cursor:pointer; }
+.delivery-option input { accent-color:#111; }
+.promo-row { display:flex; gap:8px; }
+.promo-row input { flex:1; }
+.promo-row button { white-space:nowrap; }
+.discount-line { display:flex; justify-content:space-between; margin-top:8px; font-size:14px; }
+.discount-line strong { color:#276749; }
+.order-status { display:inline-flex; padding:6px 10px; border-radius:999px; background:#eee; font-size:12px; margin-top:10px; }
+.order-actions { display:flex; gap:8px; flex-wrap:wrap; margin-top:12px; }
+.order-actions button { padding:10px 12px; border-radius:10px; border:1px solid rgba(0,0,0,.12); background:#fff; cursor:pointer; font:inherit; }
+.order-actions .danger { border-color:#d7bcbc; }
+.product-detail-stock { margin:10px 0; font-size:13px; opacity:.7; }
+.product-detail-recent { margin-top:34px; }
+@media(max-width:600px){ .promo-row { flex-direction:column; } }
+
+.order-progress { margin-top:14px; }
+.order-progress-list { display:flex; gap:6px; flex-wrap:wrap; }
+.order-step { display:flex; align-items:center; gap:6px; padding:7px 9px; border-radius:10px; background:#f3f3f3; font-size:12px; opacity:.55; }
+.order-step .order-dot { display:inline-flex; align-items:center; justify-content:center; width:18px; height:18px; border-radius:50%; background:#ddd; font-size:10px; }
+.order-step.done, .order-step.current { opacity:1; }
+.order-step.current { background:#111; color:#fff; }
+.order-step.current .order-dot { background:#fff; color:#111; }
+.order-step.done .order-dot { background:#111; color:#fff; }
+.order-status.cancelled { background:#f1e5e5; color:#7b2d2d; }
+@media(max-width:600px){ .order-progress-list { display:grid; grid-template-columns:1fr 1fr; } }
+</style>
+
+</head>
+
+<body>
+
+<main class="container">
+
+    <!-- ==================== HEADER ==================== -->
+
+    <header class="header">
+
+        <button class="logo" onclick="showHome()">
+            Velora
+        </button>
+
+        <button class="header-icon" onclick="toggleFavorite()">
+            ♡
+        </button>
+
+    </header>
+
+
+    <!-- ==================== ГЛАВНАЯ ==================== -->
+
+    <section id="homePage">
+
+        <div id="promoBanner" class="promo-banner hidden"></div>
+
+        <section class="hero">
+
+            <p class="hero-label">
+                VELORA
+            </p>
+
+            <h1>
+                Стиль,<br>
+                который говорит<br>
+                сам за себя.
+            </h1>
+
+            <p class="hero-text">
+                Одежда и обувь, которые выбирают за характер.
+            </p>
+
+            <button
+                class="hero-button"
+                onclick="showCatalog()">
+
+                Смотреть коллекцию
+                <span>→</span>
+
+            </button>
+
+        </section>
+
+
+        <section class="featured">
+
+            <div class="featured-content">
+
+                <p class="featured-label">
+                    НОВАЯ КОЛЛЕКЦИЯ
+                </p>
+
+                <h2>
+                    Обувь,<br>
+                    которая<br>
+                    запоминается.
+                </h2>
+
+                <button
+                    class="featured-link"
+                    onclick="showCatalog()">
+
+                    Смотреть обувь →
+
+                </button>
+
+            </div>
+
+
+            <div class="featured-image">
+
+                <img
+                    src="velora_shoes.png"
+                    alt="Maison Margiela Replica">
+
+            </div>
+
+        </section>
+
+
+        <section class="section">
+
+            <div class="section-header">
+
+                <h2>
+                    Категории
+                </h2>
+
+                <button
+                    class="all-button"
+                    onclick="showCatalog()">
+
+                    Все →
+
+                </button>
+
+            </div>
+
+
+            <div class="categories">
+
+                <button
+                    class="category-card"
+                    onclick="filterCatalog('clothes')">
+
+                    <span>01</span>
+
+                    <strong>
+                        Футболки
+                    </strong>
+
+                    <small>→</small>
+
+                </button>
+
+
+                <button
+                    class="category-card"
+                    onclick="filterCatalog('hoodies')">
+
+                    <span>02</span>
+
+                    <strong>
+                        Худи
+                    </strong>
+
+                    <small>→</small>
+
+                </button>
+
+
+                <button
+                    class="category-card"
+                    onclick="filterCatalog('pants')">
+
+                    <span>03</span>
+
+                    <strong>
+                        Брюки
+                    </strong>
+
+                    <small>→</small>
+
+                </button>
+
+
+                <button
+                    class="category-card"
+                    onclick="filterCatalog('shoes')">
+
+                    <span>04</span>
+
+                    <strong>
+                        Обувь
+                    </strong>
+
+                    <small>→</small>
+
+                </button>
+
+            </div>
+
+        </section>
+
+    </section>
+
+
+    <!-- ==================== КАТАЛОГ ==================== -->
+
+    <section
+        id="catalogPage"
+        class="page hidden">
+
+        <div class="page-heading">
+
+            <p class="hero-label">
+                VELORA
+            </p>
+
+            <h1>
+                Каталог
+            </h1>
+
+            <p class="hero-text">
+                Выбирай то, что подходит именно тебе.
+            </p>
+
+        </div>
+
+
+        <div class="catalog-tools">
+
+            <input
+                id="catalogSearch"
+                class="catalog-search"
+                type="search"
+                placeholder="Поиск по товарам..."
+                autocomplete="off">
+
+            <div class="catalog-controls">
+
+                <select id="catalogFilter" class="catalog-filter">
+                    <option value="all">Все категории</option>
+                    <option value="clothes">Футболки</option>
+                    <option value="hoodies">Худи</option>
+                    <option value="pants">Брюки</option>
+                    <option value="shoes">Обувь</option>
+                </select>
+
+                <select id="catalogSort" class="catalog-sort">
+                    <option value="default">Сначала рекомендуемые</option>
+                    <option value="priceAsc">Сначала дешевле</option>
+                    <option value="priceDesc">Сначала дороже</option>
+                    <option value="name">По названию</option>
+                </select>
+
+            </div>
+
+        </div>
+
+
+        <div
+            class="product-grid"
+            id="productGrid">
+
+        </div>
+
+    </section>
+
+
+    <!-- ==================== КОРЗИНА ==================== -->
+
+    <section
+        id="cartPage"
+        class="page hidden">
+
+        <div class="page-heading">
+
+            <p class="hero-label">
+                VELORA
+            </p>
+
+            <h1>
+                Корзина
+            </h1>
+
+        </div>
+
+
+        <div id="cartContent">
+
+        </div>
+
+    </section>
+
+
+    <!-- ==================== ОФОРМЛЕНИЕ ==================== -->
+
+    <section
+        id="checkoutPage"
+        class="page hidden">
+
+        <div class="page-heading">
+
+            <p class="hero-label">
+                VELORA
+            </p>
+
+            <h1>
+                Оформление
+            </h1>
+
+            <p class="hero-text">
+                Осталось указать данные для связи.
+            </p>
+
+        </div>
+
+
+        <div id="checkoutContent">
+
+        </div>
+
+    </section>
+
+
+    <!-- ==================== ПРОФИЛЬ ==================== -->
+
+    <section
+        id="profilePage"
+        class="page hidden">
+
+        <div class="page-heading">
+
+            <p class="hero-label">
+                VELORA
+            </p>
+
+            <h1>
+                Профиль
+            </h1>
+
+            <p class="hero-text">
+                Твой личный кабинет Velora.
+            </p>
+
+        </div>
+
+        <div class="profile-card">
+
+            <div class="profile-avatar">
+                V
+            </div>
+
+            <div class="profile-main">
+
+                <h2 id="profileName">
+                    Гость
+                </h2>
+
+                <p id="profileUsername">
+                    Войди через Telegram
+                </p>
+
+            </div>
+
+        </div>
+
+
+        <div class="profile-stats">
+
+            <div class="profile-stat">
+
+                <strong id="profileOrders">0</strong>
+
+                <span>
+                    Заказов
+                </span>
+
+            </div>
+
+            <div class="profile-stat">
+
+                <strong id="profileFavorites">0</strong>
+
+                <span>
+                    Избранное
+                </span>
+
+            </div>
+
+            <div class="profile-stat">
+
+                <strong id="profileCart">0</strong>
+
+                <span>
+                    В корзине
+                </span>
+
+            </div>
+
+        </div>
+
+
+        <div class="profile-menu">
+
+            <button class="profile-menu-item" onclick="showCart()">
+                <span>🛍 Моя корзина</span>
+                <span>→</span>
+            </button>
+
+            <button class="profile-menu-item" onclick="showFavorites()">
+                <span>♡ Избранное</span>
+                <span>→</span>
+            </button>
+
+            <button class="profile-menu-item" onclick="showOrders()">
+                <span>▣ Мои заказы</span>
+                <span>→</span>
+            </button>
+
+            <button class="profile-menu-item" onclick="showCatalog()">
+                <span>◫ Каталог</span>
+                <span>→</span>
+            </button>
+
+        </div>
+
+
+        <div class="profile-note">
+
+            <p class="product-category">
+                VELORA
+            </p>
+
+            <p>
+                Заказы и избранное сохраняются на этом устройстве.
+                Telegram подключим позже, когда свяжем магазин
+                с настоящим Mini App.
+            </p>
+
+        </div>
+
+    </section>
+
+
+    <!-- ==================== КАРТОЧКА ТОВАРА ==================== -->
+
+    <section id="productPage" class="page hidden">
+        <div id="productDetailContent"></div>
+    </section>
+
+
+    <!-- ==================== ИЗБРАННОЕ ==================== -->
+
+    <section id="favoritesPage" class="page hidden">
+        <div class="page-heading">
+            <p class="hero-label">VELORA</p>
+            <h1>Избранное</h1>
+            <p class="hero-text">Товары, которые ты отметил.</p>
+        </div>
+        <div id="favoritesContent"></div>
+    </section>
+
+
+    <!-- ==================== ЗАКАЗЫ ==================== -->
+
+    <section id="ordersPage" class="page hidden">
+        <div class="page-heading">
+            <p class="hero-label">VELORA</p>
+            <h1>Мои заказы</h1>
+            <p class="hero-text">История твоих заказов.</p>
+        </div>
+        <div id="ordersContent"></div>
+    </section>
+
+
+    <!-- ==================== ЗАКАЗ ПРИНЯТ ==================== -->
+
+    <section
+        id="successPage"
+        class="page hidden">
+
+        <div class="success">
+
+            <div class="success-icon">
+                ✓
+            </div>
+
+            <p class="hero-label">
+                VELORA
+            </p>
+
+            <h1>
+                Заказ принят
+            </h1>
+
+            <p>
+                Спасибо за заказ.
+                Мы свяжемся с тобой в Telegram
+                для подтверждения деталей.
+            </p>
+
+            <button
+                class="hero-button"
+                onclick="showHome()">
+
+                Вернуться на главную →
+
+            </button>
+
+        </div>
+
+    </section>
+
+</main>
+
+<div id="veloraToast" class="velora-toast"></div>
+
+
+<!-- ==================== НИЖНЕЕ МЕНЮ ==================== -->
+
+<nav class="bottom-nav">
+
+    <button
+        class="nav-item active"
+        onclick="showHome()">
+
+        <span class="nav-icon">
+            ⌂
+        </span>
+
+        <span>
+            Главная
+        </span>
+
+    </button>
+
+
+    <button
+        class="nav-item"
+        onclick="showCatalog()">
+
+        <span class="nav-icon">
+            ◫
+        </span>
+
+        <span>
+            Каталог
+        </span>
+
+    </button>
+
+
+    <button
+        class="nav-item"
+        onclick="showCart()">
+
+        <span class="nav-icon">
+            □
+        </span>
+
+        <span>
+            Корзина <span id="cartBadge" class="cart-badge">0</span>
+        </span>
+
+    </button>
+
+
+    <button
+        class="nav-item"
+        onclick="showProfile()">
+
+        <span class="nav-icon">
+            ○
+        </span>
+
+        <span>
+            Профиль
+        </span>
+
+    </button>
+
+</nav>
+
+
+<script>
+
+/* =========================================================
+   ТОВАРЫ
+========================================================= */
+
+const defaultProducts = [
+
+    {
+        id: "shoes",
+        name: "Maison Margiela Replica",
+        category: "ОБУВЬ",
+        type: "shoes",
+        price: 5999,
+        image: "velora_shoes.png",
+        stock: null,
+        description:
+            "Серые кроссовки с замшевыми вставками и карамельной подошвой."
+    },
+
+
+    {
+        id: "louboutin",
+        name: "Louboutin",
+        category: "ОБУВЬ",
+        type: "shoes",
+        price: 5999,
+        image: "velora_Louboutin.png",
+        stock: null,
+        description:
+            "Эффектная модель с характерной красной подошвой."
+    },
+
+
+    {
+        id: "amiri",
+        name: "Amiri",
+        category: "ФУТБОЛКИ",
+        type: "clothes",
+        price: 2590,
+        image: "velora_amiri.png",
+        stock: null,
+        description:
+            "Минималистичная футболка Amiri для повседневного образа."
+    },
+
+
+    {
+        id: "polo",
+        name: "Polo Ralph Lauren",
+        category: "ФУТБОЛКИ",
+        type: "clothes",
+        price: 1790,
+        image: "velora_polo.png",
+        stock: null,
+        description:
+            "Классическая футболка Polo Ralph Lauren."
+    },
+
+
+    {
+        id: "pants",
+        name: "Льняные брюки",
+        category: "БРЮКИ",
+        type: "pants",
+        price: 2999,
+        image: "velora_pants.png",
+        stock: null,
+        description:
+            "Лёгкие брюки свободного кроя на каждый день."
+    },
+
+
+    {
+        id: "hoodie",
+        name: "Polo Bear Hoodie",
+        category: "ХУДИ",
+        type: "hoodies",
+        price: 4299,
+        image: "velora_hudi.png",
+        stock: null,
+        description:
+            "Серое худи с фирменным медведем Polo Bear."
+    }
+
+];
+
+
+function getProducts() {
+    try {
+        const saved = JSON.parse(localStorage.getItem("veloraProducts") || "null");
+        return Array.isArray(saved) && saved.length ? saved : defaultProducts;
+    } catch (error) {
+        return defaultProducts;
+    }
+}
+
+let products = getProducts();
+
+function saveProducts(list) {
+    products = list;
+    localStorage.setItem("veloraProducts", JSON.stringify(list));
+}
+
+function getPromoConfig() {
+    try {
+        return JSON.parse(localStorage.getItem("veloraPromo") || "null") || {
+            code: "VELORA10",
+            type: "percent",
+            value: 10,
+            maxUses: 5,
+            used: 0,
+            enabled: true
+        };
+    } catch (error) {
+        return { code: "VELORA10", type: "percent", value: 10, maxUses: 5, used: 0, enabled: true };
+    }
+}
+
+function savePromoConfig(config) {
+    localStorage.setItem("veloraPromo", JSON.stringify(config));
+}
+
+function renderPromoBanner() {
+    const banner = document.getElementById("promoBanner");
+    if (!banner) return;
+    try {
+        const config = JSON.parse(localStorage.getItem("veloraBanner") || "null");
+        if (!config || !config.enabled || !config.text) {
+            banner.classList.add("hidden");
+            return;
+        }
+        banner.textContent = config.text;
+        banner.classList.remove("hidden");
+    } catch (error) {
+        banner.classList.add("hidden");
+    }
+}
+
+
+/* =========================================================
+   СОСТОЯНИЕ
+========================================================= */
+
+let cart = [];
+
+let selectedSizes = {};
+
+let quantities = {};
+let checkoutDiscount = 0;
+let appliedPromo = "";
+let selectedDelivery = "Самовывоз";
+
+function saveCartState() {
+    localStorage.setItem("veloraCart", JSON.stringify(cart));
+}
+
+function loadCartState() {
+    try {
+        const saved = JSON.parse(localStorage.getItem("veloraCart") || "[]");
+        if (Array.isArray(saved)) cart = saved;
+    } catch (error) {
+        cart = [];
+    }
+}
+
+function getRecentlyViewed() {
+    try { return JSON.parse(localStorage.getItem("veloraRecentlyViewed") || "[]"); }
+    catch (error) { return []; }
+}
+
+function saveRecentlyViewed(list) {
+    localStorage.setItem("veloraRecentlyViewed", JSON.stringify(list.slice(0, 6)));
+}
+
+function rememberRecentlyViewed(productId) {
+    let list = getRecentlyViewed().filter(id => id !== productId);
+    list.unshift(productId);
+    saveRecentlyViewed(list);
+}
+
+function getCheckoutTotal() {
+    return Math.max(0, getCartTotal() - checkoutDiscount);
+}
+
+
+/* =========================================================
+   НАВИГАЦИЯ
+========================================================= */
+
+function hideAllPages() {
+
+    document
+        .querySelectorAll(
+            "#homePage, #catalogPage, #cartPage, #checkoutPage, #profilePage, #productPage, #favoritesPage, #ordersPage, #successPage"
+        )
+        .forEach(function(page) {
+
+            page.classList.add("hidden");
+
+        });
+
+}
+
+
+function setActiveNav(index) {
+
+    const items =
+        document.querySelectorAll(".nav-item");
+
+    items.forEach(function(item) {
+
+        item.classList.remove("active");
+
+    });
+
+    if (items[index]) {
+
+        items[index].classList.add("active");
+
+    }
+
+}
+
+
+function showHome() {
+
+    hideAllPages();
+
+    document
+        .getElementById("homePage")
+        .classList.remove("hidden");
+
+    setActiveNav(0);
+
+    window.scrollTo(0, 0);
+
+}
+
+
+function showCatalog() {
+
+    hideAllPages();
+
+    document
+        .getElementById("catalogPage")
+        .classList.remove("hidden");
+
+    setActiveNav(1);
+    resetCatalogControls("all");
+    setupCatalogTools();
+    refreshCatalog();
+
+    window.scrollTo(0, 0);
+
+}
+
+
+function showCart() {
+
+    hideAllPages();
+
+    document
+        .getElementById("cartPage")
+        .classList.remove("hidden");
+
+    setActiveNav(2);
+
+    renderCart();
+    updateCartBadge();
+
+    window.scrollTo(0, 0);
+
+}
+
+
+function showProfile() {
+
+    hideAllPages();
+
+    document
+        .getElementById("profilePage")
+        .classList.remove("hidden");
+
+    setActiveNav(3);
+
+    updateProfile();
+
+    window.scrollTo(0, 0);
+
+}
+
+
+function getFavorites() {
+    try {
+        return JSON.parse(localStorage.getItem("veloraFavorites") || "[]");
+    } catch (error) {
+        return [];
+    }
+}
+
+
+function saveFavorites(list) {
+    localStorage.setItem("veloraFavorites", JSON.stringify(list));
+}
+
+
+function getOrders() {
+    try {
+        return JSON.parse(localStorage.getItem("veloraOrders") || "[]");
+    } catch (error) {
+        return [];
+    }
+}
+
+
+function saveOrders(list) {
+    localStorage.setItem("veloraOrders", JSON.stringify(list));
+}
+
+
+function isFavorite(productId) {
+    return getFavorites().includes(productId);
+}
+
+
+function updateProfile() {
+
+    const cartItems = cart.reduce(function(total, item) {
+        return total + item.quantity;
+    }, 0);
+
+    const cartCounter = document.getElementById("profileCart");
+    if (cartCounter) cartCounter.textContent = cartItems;
+
+    const favoritesCounter = document.getElementById("profileFavorites");
+    if (favoritesCounter) favoritesCounter.textContent = getFavorites().length;
+
+    const ordersCounter = document.getElementById("profileOrders");
+    if (ordersCounter) ordersCounter.textContent = getOrders().length;
+
+    if (window.Telegram && Telegram.WebApp && Telegram.WebApp.initDataUnsafe) {
+
+        const user = Telegram.WebApp.initDataUnsafe.user;
+
+        if (user) {
+
+            const name = [user.first_name, user.last_name]
+                .filter(Boolean)
+                .join(" ");
+
+            const nameElement = document.getElementById("profileName");
+            const usernameElement = document.getElementById("profileUsername");
+
+            if (nameElement) nameElement.textContent = name || "Пользователь";
+
+            if (usernameElement) {
+                usernameElement.textContent = user.username
+                    ? "@" + user.username
+                    : "Telegram";
+            }
+        }
+    }
+}
+
+
+function showFavorites() {
+
+    hideAllPages();
+    document.getElementById("favoritesPage").classList.remove("hidden");
+    setActiveNav(3);
+
+    renderFavorites();
+    window.scrollTo(0, 0);
+}
+
+
+function renderFavorites() {
+
+    const content = document.getElementById("favoritesContent");
+    const ids = getFavorites();
+    const favoriteProducts = products.filter(function(product) {
+        return ids.includes(product.id);
+    });
+
+    if (favoriteProducts.length === 0) {
+        content.innerHTML = `
+            <div class="empty-cart">
+                <div class="empty-icon">♡</div>
+                <h2>Пока ничего нет</h2>
+                <p>Добавляй товары в избранное из каталога.</p>
+                <button class="hero-button" onclick="showCatalog()">
+                    Перейти в каталог →
+                </button>
+            </div>
+        `;
+        return;
+    }
+
+    let html = '<div class="product-grid">';
+
+    favoriteProducts.forEach(function(product) {
+        html += `
+            <article class="product-card">
+                <div class="product-image" onclick="showProduct('${product.id}')" style="cursor:pointer; position:relative;">
+                    <img src="${product.image}" alt="${product.name}">
+                    <button class="product-favorite" onclick="event.stopPropagation(); toggleFavorite('${product.id}')">♥</button>
+                </div>
+                <div class="product-info">
+                    <p class="product-category">${product.category}</p>
+                    <h2 onclick="showProduct('${product.id}')" style="cursor:pointer;">${product.name}</h2>
+                    <p class="product-description">${product.description}</p>
+                    <div class="product-bottom">
+                        <strong class="product-price">${formatPrice(product.price)}</strong>
+                        <button class="add-button" ${product.stock !== null && Number(product.stock) <= 0 ? 'disabled' : ''} onclick="addToCart('${product.id}')">${product.stock !== null && Number(product.stock) <= 0 ? 'Нет в наличии' : 'В корзину'}</button>
+                    </div>
+                </div>
+            </article>
+        `;
+    });
+
+    html += '</div>';
+    content.innerHTML = html;
+}
+
+
+function showOrders() {
+
+    hideAllPages();
+    document.getElementById("ordersPage").classList.remove("hidden");
+    setActiveNav(3);
+
+    renderOrders();
+    window.scrollTo(0, 0);
+}
+
+
+function renderOrders() {
+
+    const content = document.getElementById("ordersContent");
+    const orders = getOrders();
+
+    if (orders.length === 0) {
+        content.innerHTML = `
+            <div class="empty-cart">
+                <div class="empty-icon">▣</div>
+                <h2>Заказов пока нет</h2>
+                <p>После оформления заказа он появится здесь.</p>
+                <button class="hero-button" onclick="showCatalog()">
+                    Перейти в каталог →
+                </button>
+            </div>
+        `;
+        return;
+    }
+
+    let html = "";
+
+    orders.slice().reverse().forEach(function(order, index) {
+
+        const orderNumber = order.number || (orders.length - index);
+
+        html += `
+            <div class="cart-item order-card">
+                <div class="cart-item-info">
+                    <p>ЗАКАЗ №${orderNumber}</p>
+                    <h2>${order.date}</h2>
+                    <strong>${formatPrice(order.total)}</strong>
+                    <p>${order.items.map(function(item) {
+                        return item.name + " × " + item.quantity + " · " + item.size;
+                    }).join("<br>")}</p>
+                    <p>${order.delivery ? "Получение: " + order.delivery : ""}</p>
+                    ${order.comment ? `<p>Комментарий: ${order.comment}</p>` : ""}
+                    <div class="order-progress">${renderOrderProgress(order.status || "Принят")}</div>
+                    ${(!order.status || order.status === "Принят") ? `<div class="order-actions"><button class="danger" onclick="cancelOrder(${order.number})">Отменить заказ</button></div>` : ""}
+                </div>
+            </div>
+        `;
+    });
+
+    content.innerHTML = html;
+}
+
+function renderOrderProgress(status) {
+    const steps = ["Принят", "Собирается", "Передан", "Доставляется", "Получен"];
+    if (status === "Отменён") {
+        return '<span class="order-status cancelled">Заказ отменён</span>';
+    }
+    const current = Math.max(0, steps.indexOf(status));
+    return '<div class="order-progress-list">' + steps.map(function(step, index) {
+        const cls = index < current ? 'done' : (index === current ? 'current' : '');
+        return '<div class="order-step ' + cls + '"><span class="order-dot">' + (index < current ? '✓' : (index + 1)) + '</span><span>' + step + '</span></div>';
+    }).join('') + '</div>';
+}
+
+function cancelOrder(orderNumber) {
+    const orders = getOrders();
+    const order = orders.find(item => item.number === orderNumber);
+    if (!order || (order.status && order.status !== "Принят")) return;
+    if (!confirm("Отменить заказ №" + orderNumber + "?")) return;
+    order.status = "Отменён";
+    saveOrders(orders);
+    updateProfile();
+    renderOrders();
+    showToast("Заказ №" + orderNumber + " отменён");
+}
+
+
+/* =========================================================
+   ФИЛЬТР КАТЕГОРИЙ
+========================================================= */
+
+function filterCatalog(type) {
+
+    hideAllPages();
+
+    document.getElementById("catalogPage").classList.remove("hidden");
+    setActiveNav(1);
+    resetCatalogControls(type);
+    setupCatalogTools();
+    refreshCatalog();
+    window.scrollTo(0, 0);
+
+}
+
+
+/* =========================================================
+   УМНЫЙ КАТАЛОГ
+========================================================= */
+
+let activeCatalogType = "all";
+let activeCatalogSearch = "";
+let activeCatalogSort = "default";
+
+function getFilteredProducts() {
+
+    let list = products.filter(function(product) {
+        const matchesType = activeCatalogType === "all" || product.type === activeCatalogType;
+        const haystack = (product.name + " " + product.category + " " + product.description).toLowerCase();
+        const matchesSearch = !activeCatalogSearch || haystack.includes(activeCatalogSearch.toLowerCase());
+        return matchesType && matchesSearch;
+    });
+
+    if (activeCatalogSort === "priceAsc") list.sort((a,b) => a.price - b.price);
+    if (activeCatalogSort === "priceDesc") list.sort((a,b) => b.price - a.price);
+    if (activeCatalogSort === "name") list.sort((a,b) => a.name.localeCompare(b.name));
+
+    return list;
+}
+
+function refreshCatalog() {
+    renderProducts(getFilteredProducts());
+}
+
+function setupCatalogTools() {
+    const search = document.getElementById("catalogSearch");
+    const filter = document.getElementById("catalogFilter");
+    const sort = document.getElementById("catalogSort");
+
+    if (search && !search.dataset.ready) {
+        search.dataset.ready = "1";
+        search.addEventListener("input", function() {
+            activeCatalogSearch = search.value.trim();
+            refreshCatalog();
+        });
+    }
+
+    if (filter && !filter.dataset.ready) {
+        filter.dataset.ready = "1";
+        filter.addEventListener("change", function() {
+            activeCatalogType = filter.value;
+            refreshCatalog();
+        });
+    }
+
+    if (sort && !sort.dataset.ready) {
+        sort.dataset.ready = "1";
+        sort.addEventListener("change", function() {
+            activeCatalogSort = sort.value;
+            refreshCatalog();
+        });
+    }
+}
+
+function resetCatalogControls(type) {
+    activeCatalogType = type || "all";
+    activeCatalogSearch = "";
+    activeCatalogSort = "default";
+    const search = document.getElementById("catalogSearch");
+    const filter = document.getElementById("catalogFilter");
+    const sort = document.getElementById("catalogSort");
+    if (search) search.value = "";
+    if (filter) filter.value = activeCatalogType;
+    if (sort) sort.value = "default";
+}
+
+function showToast(message) {
+    const toast = document.getElementById("veloraToast");
+    if (!toast) return;
+    toast.textContent = message;
+    toast.classList.add("show");
+    clearTimeout(window.veloraToastTimer);
+    window.veloraToastTimer = setTimeout(function() { toast.classList.remove("show"); }, 1800);
+}
+
+function updateCartBadge() {
+    const badge = document.getElementById("cartBadge");
+    if (!badge) return;
+    const count = cart.reduce((sum, item) => sum + item.quantity, 0);
+    badge.textContent = count;
+    badge.style.display = count ? "inline-flex" : "none";
+    updateProfile();
+}
+
+function getRecentIds() {
+    try { return JSON.parse(localStorage.getItem("veloraRecent") || "[]"); }
+    catch (e) { return []; }
+}
+
+function saveRecentIds(ids) {
+    localStorage.setItem("veloraRecent", JSON.stringify(ids.slice(0,6)));
+}
+
+function rememberRecent(productId) {
+    const ids = getRecentIds().filter(id => id !== productId);
+    ids.unshift(productId);
+    saveRecentIds(ids);
+}
+
+function renderRecommendations(productId) {
+    const content = document.getElementById("productRecommendations");
+    if (!content) return;
+    const current = products.find(p => p.id === productId);
+    if (!current) return;
+    const list = products.filter(p => p.id !== productId && p.type === current.type).slice(0,3);
+    const fallback = products.filter(p => p.id !== productId).slice(0,3);
+    const finalList = list.length ? list : fallback;
+    content.innerHTML = finalList.map(product => `
+        <article class="product-card">
+            <div class="product-image" onclick="showProduct('${product.id}')" style="cursor:pointer; position:relative;">
+                <img src="${product.image}" alt="${product.name}">
+            </div>
+            <div class="product-info">
+                <p class="product-category">${product.category}</p>
+                <h2 onclick="showProduct('${product.id}')" style="cursor:pointer;">${product.name}</h2>
+                <div class="product-bottom">
+                    <strong class="product-price">${formatPrice(product.price)}</strong>
+                    <button class="add-button" onclick="addToCart('${product.id}')">В корзину</button>
+                </div>
+            </div>
+        </article>
+    `).join("");
+}
+
+
+/* =========================================================
+   КАТАЛОГ
+========================================================= */
+
+function renderProducts(list) {
+
+    const grid = document.getElementById("productGrid");
+    grid.innerHTML = "";
+
+    list.forEach(function(product) {
+
+        const favorite = isFavorite(product.id);
+
+        const article = document.createElement("article");
+        article.className = "product-card";
+
+        article.innerHTML = `
+
+            <div class="product-image" onclick="showProduct('${product.id}')" style="cursor:pointer; position:relative;">
+
+                <img src="${product.image}" alt="${product.name}">
+
+                <span class="product-badge">NEW</span>
+
+                <button
+                    class="product-favorite"
+                    onclick="event.stopPropagation(); toggleFavorite('${product.id}')"
+                    aria-label="Избранное">
+                    ${favorite ? "♥" : "♡"}
+                </button>
+
+            </div>
+
+            <div class="product-info">
+
+                <p class="product-category">${product.category}</p>
+
+                <h2 onclick="showProduct('${product.id}')" style="cursor:pointer;">
+                    ${product.name}
+                </h2>
+
+                <p class="product-description">${product.description}</p>
+
+
+                <div class="product-bottom">
+
+                    <strong class="product-price">
+                        ${formatPrice(product.price)}
+                    </strong>
+
+                    <button class="add-button" onclick="addToCart('${product.id}')">
+                        В корзину
+                    </button>
+
+                </div>
+
+            </div>
+        `;
+
+        grid.appendChild(article);
+    });
+}
+
+
+/* =========================================================
+   КАРТОЧКА ТОВАРА
+========================================================= */
+
+function showProduct(productId) {
+
+    const product = products.find(function(item) {
+        return item.id === productId;
+    });
+
+    if (!product) return;
+
+    hideAllPages();
+
+    document.getElementById("productPage").classList.remove("hidden");
+    setActiveNav(1);
+
+    rememberRecent(productId);
+    rememberRecentlyViewed(product.id);
+    renderProductDetail(product);
+    window.scrollTo(0, 0);
+}
+
+
+function renderProductDetail(product) {
+
+    const content = document.getElementById("productDetailContent");
+    const favorite = isFavorite(product.id);
+
+    content.innerHTML = `
+
+        <button class="back-button" onclick="showCatalog()">
+            ← Вернуться в каталог
+        </button>
+
+        <div class="product-detail">
+
+            <div class="product-detail-image">
+                <img src="${product.image}" alt="${product.name}">
+            </div>
+
+            <div class="product-detail-info">
+
+                <p class="product-category">${product.category}</p>
+
+                <h1>${product.name}</h1>
+
+                <strong class="product-detail-price">
+                    ${formatPrice(product.price)}
+                </strong>
+
+                <p class="hero-text">
+                    ${product.description}
+                </p>
+
+                <p class="product-detail-stock">${product.stock === 0 ? "Нет в наличии" : "В наличии"}</p>
+
+                <div class="size-picker">
+                    <label>Размер</label>
+                    <div class="detail-size-buttons">
+                        ${getProductSizes(product).map(size => `
+                            <button class="detail-size-button ${selectedSizes[product.id] === size ? "selected" : ""}" onclick="selectDetailSize('${product.id}', this, '${size}')">${size}</button>
+                        `).join("")}
+                    </div>
+                </div>
+
+                <div class="product-detail-actions">
+                    <button class="hero-button" onclick="addToCart('${product.id}')">
+                        В корзину →
+                    </button>
+
+                    <button class="back-button" onclick="toggleFavorite('${product.id}')">
+                        ${favorite ? "♥ Убрать из избранного" : "♡ В избранное"}
+                    </button>
+                </div>
+
+            </div>
+        </div>
+
+        <div class="recommendations">
+            <h2 class="recent-title">Возможно, тебе понравится</h2>
+            <div id="productRecommendations" class="product-grid"></div>
+        </div>
+
+        <div id="recentlyViewed" class="product-detail-recent">
+            <h2 class="recent-title">Недавно просмотренные</h2>
+            <div id="recentlyViewedGrid" class="product-grid"></div>
+        </div>
+    `;
+
+    renderRecommendations(product.id);
+    renderRecentlyViewed();
+}
+
+function getProductSizes(product) {
+    return product.type === "shoes" ? ["41","42","43","44"] : ["S","M","L","XL"];
+}
+
+function selectDetailSize(productId, button, size) {
+    button.parentElement.querySelectorAll(".detail-size-button").forEach(function(item) { item.classList.remove("selected"); });
+    button.classList.add("selected");
+    selectedSizes[productId] = size;
+    showToast("Размер " + size + " выбран");
+}
+
+function renderRecentlyViewed() {
+    const section = document.getElementById("recentlyViewed");
+    const grid = document.getElementById("recentlyViewedGrid");
+    if (!section || !grid) return;
+    const ids = getRecentlyViewed();
+    const list = ids.map(id => products.find(p => p.id === id)).filter(Boolean);
+    if (!list.length) { section.classList.add("hidden"); return; }
+    section.classList.remove("hidden");
+    grid.innerHTML = list.map(product => `
+        <article class="product-card">
+            <div class="product-image" onclick="showProduct('${product.id}')" style="cursor:pointer;">
+                <img src="${product.image}" alt="${product.name}">
+            </div>
+            <div class="product-info">
+                <p class="product-category">${product.category}</p>
+                <h2 onclick="showProduct('${product.id}')" style="cursor:pointer;">${product.name}</h2>
+                <strong class="product-price">${formatPrice(product.price)}</strong>
+            </div>
+        </article>`).join("");
+}
+
+
+/* =========================================================
+   ДОБАВЛЕНИЕ В КОРЗИНУ
+========================================================= */
+
+function addToCart(productId) {
+
+    const product =
+        products.find(function(item) {
+
+            return item.id === productId;
+
+        });
+
+
+    if (!product) {
+        return;
+    }
+
+    if (product.stock !== null && Number(product.stock) <= 0) {
+        showToast("Товара нет в наличии");
+        return;
+    }
+
+
+    /*
+       Если товар уже есть в корзине —
+       увеличиваем его количество.
+    */
+
+    const existing =
+        cart.find(function(item) {
+
+            return item.id === productId;
+
+        });
+
+
+    if (existing) {
+
+        if (product.stock !== null && Number(existing.quantity) >= Number(product.stock)) {
+            showToast("Больше товара нет в наличии");
+            return;
+        }
+
+        existing.quantity += 1;
+
+    } else {
+
+        cart.push({
+
+            ...product,
+
+            quantity: 1
+
+        });
+
+    }
+
+
+    /*
+       Запоминаем количество.
+    */
+
+    quantities[productId] =
+        existing
+            ? existing.quantity
+            : 1;
+
+
+    saveCartState();
+    updateCartBadge();
+    updateProfile();
+    showToast(product.name + " добавлен в корзину");
+
+    if (!document.getElementById("productPage").classList.contains("hidden")) {
+        renderProductDetail(product);
+    } else {
+        refreshCatalog();
+    }
+
+}
+
+
+/* =========================================================
+   УДАЛЕНИЕ ТОВАРА ИЗ КОРЗИНЫ
+========================================================= */
+
+function removeFromCart(productId) {
+
+    cart =
+        cart.filter(function(item) {
+
+            return item.id !== productId;
+
+        });
+
+
+    delete quantities[productId];
+
+    delete selectedSizes[productId];
+
+
+    saveCartState();
+    updateCartBadge();
+    updateProfile();
+    renderCart();
+
+}
+
+
+/* =========================================================
+   ИЗМЕНЕНИЕ КОЛИЧЕСТВА В КОРЗИНЕ
+========================================================= */
+
+function getCurrentStock(productId) {
+    const current = products.find(function(product) {
+        return product.id === productId;
+    });
+
+    if (!current || current.stock === null || current.stock === "") {
+        return null;
+    }
+
+    return Math.max(0, Number(current.stock));
+}
+
+
+function changeCartQuantity(productId, change) {
+
+    const item =
+        cart.find(function(product) {
+
+            return product.id === productId;
+
+        });
+
+
+    if (!item) {
+        return;
+    }
+
+
+    const stock = getCurrentStock(productId);
+
+    if (change > 0 && stock !== null && item.quantity >= stock) {
+        showToast("Больше товара нет в наличии");
+        return;
+    }
+
+    item.quantity += change;
+
+
+    if (item.quantity <= 0) {
+
+        removeFromCart(productId);
+
+        return;
+
+    }
+
+
+    if (item.quantity > 10) {
+
+        item.quantity = 10;
+
+    }
+
+
+    quantities[productId] =
+        item.quantity;
+
+    saveCartState();
+    updateCartBadge();
+    updateProfile();
+    renderCart();
+
+}
+
+
+/* =========================================================
+   ОБЩАЯ СУММА
+========================================================= */
+
+function getCartTotal() {
+
+    return cart.reduce(
+
+        function(total, item) {
+
+            return total +
+                item.price * item.quantity;
+
+        },
+
+        0
+
+    );
+
+}
+
+
+/* =========================================================
+   КОРЗИНА
+========================================================= */
+
+function renderCart() {
+
+    const content =
+        document.getElementById("cartContent");
+
+
+    if (cart.length === 0) {
+
+        content.innerHTML = `
+
+            <div class="empty-cart">
+
+                <div class="empty-icon">
+                    □
+                </div>
+
+                <h2>
+                    Корзина пуста
+                </h2>
+
+                <p>
+                    Добавь что-нибудь из каталога.
+                </p>
+
+                <button
+                    class="hero-button"
+                    onclick="showCatalog()">
+
+                    Перейти в каталог →
+
+                </button>
+
+            </div>
+
+        `;
+
+        return;
+
+    }
+
+
+    let itemsHTML = "";
+
+
+    cart.forEach(function(product) {
+
+        itemsHTML += `
+
+            <div class="cart-item">
+
+                <img
+                    src="${product.image}"
+                    alt="${product.name}">
+
+
+                <div class="cart-item-info">
+
+                    <p>
+                        ${product.category}
+                    </p>
+
+                    <h2>
+                        ${product.name}
+                    </h2>
+
+                    <strong>
+                        ${formatPrice(product.price)}
+                    </strong>
+
+
+                    <div class="quantity">
+
+                        <button
+                            onclick="changeCartQuantity('${product.id}', -1)">
+
+                            −
+
+                        </button>
+
+
+                        <span>
+                            ${product.quantity}
+                        </span>
+
+
+                        <button
+                            onclick="changeCartQuantity('${product.id}', 1)">
+
+                            +
+
+                        </button>
+
+                    </div>
+
+
+                    <button
+                        class="back-button"
+                        onclick="removeFromCart('${product.id}')">
+
+                        Удалить
+
+                    </button>
+
+                </div>
+
+            </div>
+
+        `;
+
+    });
+
+
+    const total =
+        getCartTotal();
+
+
+    content.innerHTML = `
+
+        ${itemsHTML}
+
+
+        <div class="cart-total">
+
+            <span>
+                Итого
+            </span>
+
+            <strong>
+                ${formatPrice(total)}
+            </strong>
+
+        </div>
+
+
+        <button
+            class="hero-button"
+            onclick="showCheckout()">
+
+            Оформить заказ →
+
+        </button>
+
+    `;
+
+}
+
+
+/* =========================================================
+   ОФОРМЛЕНИЕ
+========================================================= */
+
+function showCheckout() {
+
+    if (cart.length === 0) {
+
+        showCatalog();
+
+        return;
+
+    }
+
+
+    hideAllPages();
+
+
+    document
+        .getElementById("checkoutPage")
+        .classList.remove("hidden");
+
+
+    setActiveNav(2);
+
+
+    renderCheckout();
+
+
+    window.scrollTo(0, 0);
+
+}
+
+
+/* =========================================================
+   ОФОРМЛЕНИЕ — ВСЕ ТОВАРЫ
+========================================================= */
+
+function renderCheckout() {
+
+    const content =
+        document.getElementById("checkoutContent");
+
+
+    let productsHTML = "";
+
+
+    cart.forEach(function(product) {
+
+        let sizes;
+
+
+        if (product.type === "shoes") {
+
+            sizes = [
+                "41",
+                "42",
+                "43",
+                "44"
+            ];
+
+        } else {
+
+            sizes = [
+                "S",
+                "M",
+                "L",
+                "XL"
+            ];
+
+        }
+
+
+        const sizeButtons =
+            sizes.map(function(size) {
+
+                const selected =
+                    selectedSizes[product.id] === size
+                        ? "selected"
+                        : "";
+
+
+                return `
+
+                    <button
+                        class="size-button ${selected}"
+                        onclick="selectProductSize(
+                            '${product.id}',
+                            this,
+                            '${size}'
+                        )">
+
+                        ${size}
+
+                    </button>
+
+                `;
+
+            }).join("");
+
+
+        productsHTML += `
+
+            <div class="checkout-product">
+
+                <img
+                    src="${product.image}"
+                    alt="${product.name}">
+
+
+                <div>
+
+                    <p class="product-category">
+                        ${product.category}
+                    </p>
+
+                    <h2>
+                        ${product.name}
+                    </h2>
+
+                    <strong>
+                        ${formatPrice(product.price)}
+                    </strong>
+
+                    <p class="checkout-stock">
+                        ${getCurrentStock(product.id) === null
+                            ? "В наличии"
+                            : (getCurrentStock(product.id) === 0
+                                ? "Нет в наличии"
+                                : "Осталось на складе: " + getCurrentStock(product.id) + " шт.")}
+                    </p>
+
+                </div>
+
+            </div>
+
+
+            <div class="form-section">
+
+                <label>
+                    Размер
+                </label>
+
+
+                <div class="size-buttons">
+
+                    ${sizeButtons}
+
+                </div>
+
+
+                <p
+                    id="sizeError-${product.id}"
+                    class="form-error">
+
+                    Выбери размер
+
+                </p>
+
+            </div>
+
+
+            <div class="form-section">
+
+                <label>
+                    Количество
+                </label>
+
+
+                <div class="quantity">
+
+                    <button
+                        onclick="changeCheckoutQuantity('${product.id}', -1)">
+
+                        −
+
+                    </button>
+
+
+                    <span>
+                        ${product.quantity}
+                    </span>
+
+
+                    <button
+                        onclick="changeCheckoutQuantity('${product.id}', 1)">
+
+                        +
+
+                    </button>
+
+                </div>
+
+            </div>
+
+        `;
+
+    });
+
+
+    content.innerHTML = `
+
+        ${productsHTML}
+
+
+        <div class="form-section">
+
+            <label for="customerName">
+                Имя
+            </label>
+
+            <input
+                id="customerName"
+                type="text"
+                placeholder="Как к тебе обращаться">
+
+        </div>
+
+
+        <div class="form-section">
+
+            <label for="customerTelegram">
+                Telegram
+            </label>
+
+            <input
+                id="customerTelegram"
+                type="text"
+                placeholder="@username">
+
+        </div>
+
+
+        <div class="checkout-extra">
+
+            <div class="form-section">
+                <label>Получение заказа</label>
+                <div class="delivery-options">
+                    <label class="delivery-option"><input type="radio" name="deliveryMethod" value="Самовывоз" checked> Самовывоз</label>
+                    <label class="delivery-option"><input type="radio" name="deliveryMethod" value="Доставка по городу"> Доставка по городу</label>
+                </div>
+            </div>
+
+            <div class="form-section">
+                <label for="customerComment">Комментарий к заказу</label>
+                <textarea id="customerComment" rows="3" placeholder="Например: связаться после 18:00"></textarea>
+            </div>
+
+            <div class="form-section">
+                <label for="promoCode">Промокод</label>
+                <div class="promo-row">
+                    <input id="promoCode" type="text" placeholder="Введите промокод">
+                    <button class="back-button" type="button" onclick="applyPromo()">Применить</button>
+                </div>
+                <p id="promoMessage" class="form-error"></p>
+            </div>
+
+        </div>
+
+        <div id="discountLine" class="discount-line hidden">
+            <span>Скидка</span>
+            <strong id="discountValue">−0 ₽</strong>
+        </div>
+
+        <div class="checkout-total">
+
+            <span>
+                Итого
+            </span>
+
+            <strong id="checkoutTotal">
+                ${formatPrice(getCheckoutTotal())}
+            </strong>
+
+        </div>
+
+
+        <button
+            class="hero-button checkout-button"
+            onclick="confirmOrder()">
+
+            Подтвердить заказ →
+
+        </button>
+
+
+        <button
+            class="back-button"
+            onclick="showCart()">
+
+            ← Вернуться в корзину
+
+        </button>
+
+    `;
+
+}
+
+
+/* =========================================================
+   РАЗМЕР КОНКРЕТНОГО ТОВАРА
+========================================================= */
+
+function selectProductSize(
+    productId,
+    button,
+    size
+) {
+
+    const buttons =
+        button
+            .parentElement
+            .querySelectorAll(".size-button");
+
+
+    buttons.forEach(function(item) {
+
+        item.classList.remove("selected");
+
+    });
+
+
+    button.classList.add("selected");
+
+
+    selectedSizes[productId] =
+        size;
+
+
+    const error =
+        document.getElementById(
+            "sizeError-" + productId
+        );
+
+
+    if (error) {
+
+        error.classList.remove("show");
+
+    }
+
+}
+
+
+/* =========================================================
+   КОЛИЧЕСТВО НА СТРАНИЦЕ ОФОРМЛЕНИЯ
+========================================================= */
+
+function changeCheckoutQuantity(
+    productId,
+    change
+) {
+
+    const item =
+        cart.find(function(product) {
+
+            return product.id === productId;
+
+        });
+
+
+    if (!item) {
+        return;
+    }
+
+
+    const stock = getCurrentStock(productId);
+
+    if (change > 0 && stock !== null && item.quantity >= stock) {
+        alert("Нельзя выбрать больше товара, чем есть на складе.");
+        return;
+    }
+
+    item.quantity += change;
+
+
+    if (item.quantity <= 0) {
+
+        removeFromCart(productId);
+
+        if (cart.length > 0) {
+
+            renderCheckout();
+
+        } else {
+
+            showCart();
+
+        }
+
+        return;
+
+    }
+
+
+    if (item.quantity > 10) {
+
+        item.quantity = 10;
+
+    }
+
+
+    quantities[productId] =
+        item.quantity;
+
+
+    renderCheckout();
+
+}
+
+
+function applyPromo() {
+    const input = document.getElementById("promoCode");
+    const message = document.getElementById("promoMessage");
+    if (!input || !message) return;
+
+    const code = input.value.trim().toUpperCase();
+    const config = getPromoConfig();
+    checkoutDiscount = 0;
+    appliedPromo = "";
+
+    if (config.enabled && code && code === String(config.code).toUpperCase() && Number(config.used || 0) < Number(config.maxUses || 0)) {
+        const total = getCartTotal();
+        checkoutDiscount = config.type === "fixed"
+            ? Math.min(total, Number(config.value || 0))
+            : Math.round(total * Number(config.value || 0) / 100);
+        appliedPromo = code;
+        message.textContent = "Промокод применён — скидка " + (config.type === "fixed" ? formatPrice(config.value) : config.value + "%") + ".";
+        message.classList.remove("show");
+        document.getElementById("discountLine").classList.remove("hidden");
+        document.getElementById("discountValue").textContent = "−" + formatPrice(checkoutDiscount);
+        document.getElementById("checkoutTotal").textContent = formatPrice(getCheckoutTotal());
+        return;
+    }
+
+    if (code && config.enabled && code === String(config.code).toUpperCase() && Number(config.used || 0) >= Number(config.maxUses || 0)) {
+        message.textContent = "Промокод уже использован максимальное количество раз.";
+    } else {
+        message.textContent = code ? "Промокод не найден." : "";
+    }
+    message.classList.toggle("show", !!code);
+    document.getElementById("discountLine").classList.add("hidden");
+    document.getElementById("checkoutTotal").textContent = formatPrice(getCheckoutTotal());
+}
+
+function updateCheckoutDelivery() {
+    const selected = document.querySelector('input[name="deliveryMethod"]:checked');
+    selectedDelivery = selected ? selected.value : "Самовывоз";
+}
+
+
+/* =========================================================
+   ПОДТВЕРЖДЕНИЕ ЗАКАЗА
+========================================================= */
+
+function confirmOrder() {
+
+    let allSizesSelected = true;
+
+    cart.forEach(function(product) {
+        if (!selectedSizes[product.id]) {
+            allSizesSelected = false;
+
+            const error = document.getElementById("sizeError-" + product.id);
+            if (error) error.classList.add("show");
+        }
+    });
+
+    if (!allSizesSelected) return;
+
+    const name = document.getElementById("customerName").value.trim();
+    const telegram = document.getElementById("customerTelegram").value.trim();
+
+    if (!name) {
+        alert("Введи своё имя.");
+        return;
+    }
+
+    if (!telegram) {
+        alert("Введи Telegram для связи.");
+        return;
+    }
+
+    updateCheckoutDelivery();
+
+    // Проверяем остатки ещё раз прямо перед созданием заказа.
+    // Это защищает от продажи товара сверх остатка.
+    for (const item of cart) {
+        const stock = getCurrentStock(item.id);
+        if (stock !== null && item.quantity > stock) {
+            alert("Товара «" + item.name + "» осталось только " + stock + " шт.");
+            showCart();
+            return;
+        }
+    }
+
+    // Списываем товар со склада после успешной проверки.
+    const updatedProducts = products.map(function(product) {
+        const cartItem = cart.find(function(item) { return item.id === product.id; });
+        if (!cartItem || product.stock === null || product.stock === "") return product;
+        return Object.assign({}, product, { stock: Math.max(0, Number(product.stock) - Number(cartItem.quantity)) });
+    });
+    saveProducts(updatedProducts);
+
+    const commentElement = document.getElementById("customerComment");
+    const comment = commentElement ? commentElement.value.trim() : "";
+    const orders = getOrders();
+
+    const order = {
+        number: orders.length + 1,
+        date: new Date().toLocaleString("ru-RU"),
+        name: name,
+        telegram: telegram,
+        delivery: selectedDelivery,
+        comment: comment,
+        promo: appliedPromo,
+        discount: checkoutDiscount,
+        total: getCheckoutTotal(),
+        status: "Принят",
+        items: cart.map(function(product) {
+            return {
+                name: product.name,
+                size: selectedSizes[product.id],
+                quantity: product.quantity,
+                price: product.price
+            };
+        })
+    };
+
+    orders.push(order);
+    saveOrders(orders);
+
+    // Отправляем новый заказ в Telegram через локальный сервер Velora.
+    fetch("http://127.0.0.1:8000/api/order", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify(order)
+    })
+    .then(response => response.json())
+    .then(data => {
+        console.log("Telegram:", data);
+    })
+    .catch(error => {
+        console.error("Ошибка отправки заказа в Telegram:", error);
+    });
+
+    if (appliedPromo) {
+        const promoConfig = getPromoConfig();
+        if (String(promoConfig.code).toUpperCase() === appliedPromo) {
+            promoConfig.used = Number(promoConfig.used || 0) + 1;
+            savePromoConfig(promoConfig);
+        }
+    }
+
+    console.log("Новый заказ:", order);
+
+    cart = [];
+    selectedSizes = {};
+    quantities = {};
+    checkoutDiscount = 0;
+    appliedPromo = "";
+    saveCartState();
+
+    updateProfile();
+
+    hideAllPages();
+    document.getElementById("successPage").classList.remove("hidden");
+    window.scrollTo(0, 0);
+}
+
+
+/* =========================================================
+   ИЗБРАННОЕ
+========================================================= */
+
+function toggleFavorite(productId) {
+
+    if (!productId) {
+        showFavorites();
+        return;
+    }
+
+    const favorites = getFavorites();
+    const index = favorites.indexOf(productId);
+
+    if (index === -1) {
+        favorites.push(productId);
+    } else {
+        favorites.splice(index, 1);
+    }
+
+    saveFavorites(favorites);
+
+    if (!document.getElementById("favoritesPage").classList.contains("hidden")) {
+        renderFavorites();
+    }
+
+    if (!document.getElementById("productPage").classList.contains("hidden")) {
+        const product = products.find(function(item) { return item.id === productId; });
+        if (product) renderProductDetail(product);
+    }
+
+    updateProfile();
+    renderProducts(products);
+}
+
+
+/* =========================================================
+   ФОРМАТ ЦЕНЫ
+========================================================= */
+
+function formatPrice(price) {
+
+    return price
+        .toLocaleString("ru-RU") + " ₽";
+
+}
+
+
+/* =========================================================
+   ПЕРВЫЙ ЗАПУСК
+========================================================= */
+
+showHome();
+setupCatalogTools();
+updateCartBadge();
+updateProfile();
+
+loadCartState();
+updateCartBadge();
+updateProfile();
+document.addEventListener("change", function(event) {
+    if (event.target && event.target.name === "deliveryMethod") updateCheckoutDelivery();
+});
+
+document.addEventListener("DOMContentLoaded", function(){ products = getProducts(); renderPromoBanner(); });
+</script>
+
+</body>
+</html>
