@@ -2361,7 +2361,7 @@ function confirmOrder() {
     saveOrders(orders);
 
     // Отправляем новый заказ в Telegram через локальный сервер Velora.
-    fetch("http://127.0.0.1:8000/api/order", {
+    fetch("https://velorabot.onrender.com/api/order", {
         method: "POST",
         headers: {
             "Content-Type": "application/json"
