@@ -8,6 +8,7 @@
     <title>Velora</title>
 
     <link rel="stylesheet" href="style.css">
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
 
 <style>
 .product-favorite { position:absolute; top:12px; right:12px; width:38px; height:38px; border-radius:50%; border:1px solid rgba(0,0,0,.12); background:rgba(255,255,255,.9); font-size:20px; cursor:pointer; z-index:2; }
@@ -2301,6 +2302,12 @@ function confirmOrder() {
     const name = document.getElementById("customerName").value.trim();
     const telegram = document.getElementById("customerTelegram").value.trim();
 
+    // Telegram ID клиента для уведомлений о статусе заказа.
+    const tgUser = window.Telegram && Telegram.WebApp && Telegram.WebApp.initDataUnsafe
+        ? Telegram.WebApp.initDataUnsafe.user
+        : null;
+    const telegramId = tgUser ? tgUser.id : null;
+
     if (!name) {
         alert("Введи своё имя.");
         return;
@@ -2341,6 +2348,7 @@ function confirmOrder() {
         date: new Date().toLocaleString("ru-RU"),
         name: name,
         telegram: telegram,
+        telegram_id: telegramId,
         delivery: selectedDelivery,
         comment: comment,
         promo: appliedPromo,
@@ -2360,7 +2368,7 @@ function confirmOrder() {
     orders.push(order);
     saveOrders(orders);
 
-    // Отправляем новый заказ в Telegram через локальный сервер Velora.
+    // Отправляем новый заказ на публичный API VeloraBot в Render.
     fetch("https://velorabot.onrender.com/api/order", {
         method: "POST",
         headers: {
@@ -2452,6 +2460,11 @@ function formatPrice(price) {
 /* =========================================================
    ПЕРВЫЙ ЗАПУСК
 ========================================================= */
+
+if (window.Telegram && Telegram.WebApp) {
+    Telegram.WebApp.ready();
+    Telegram.WebApp.expand();
+}
 
 showHome();
 setupCatalogTools();
