@@ -2284,7 +2284,7 @@ function updateCheckoutDelivery() {
    ПОДТВЕРЖДЕНИЕ ЗАКАЗА
 ========================================================= */
 
-function confirmOrder() {
+async function confirmOrder() {
 
     let allSizesSelected = true;
 
@@ -2331,20 +2331,17 @@ function confirmOrder() {
         }
     }
 
-    // Списываем товар со склада после успешной проверки.
+    // Готовим новые остатки, но сохраняем их только после того,
+    // как сервер подтвердит создание заказа.
     const updatedProducts = products.map(function(product) {
         const cartItem = cart.find(function(item) { return item.id === product.id; });
         if (!cartItem || product.stock === null || product.stock === "") return product;
         return Object.assign({}, product, { stock: Math.max(0, Number(product.stock) - Number(cartItem.quantity)) });
     });
-    saveProducts(updatedProducts);
 
     const commentElement = document.getElementById("customerComment");
     const comment = commentElement ? commentElement.value.trim() : "";
-    const orders = getOrders();
-
     const order = {
-        number: orders.length + 1,
         date: new Date().toLocaleString("ru-RU"),
         name: name,
         telegram: telegram,
@@ -2365,24 +2362,42 @@ function confirmOrder() {
         })
     };
 
-    orders.push(order);
-    saveOrders(orders);
+    // Номер заказа теперь выдаёт сервер из PostgreSQL.
+    // Не создаём номер на клиенте — это исключает дубли и пропуски из-за localStorage.
+    try {
+        const response = await fetch("https://velorabot.onrender.com/api/order", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify(order)
+        });
 
-    // Отправляем новый заказ на публичный API VeloraBot в Render.
-    fetch("https://velorabot.onrender.com/api/order", {
-        method: "POST",
-        headers: {
-            "Content-Type": "application/json"
-        },
-        body: JSON.stringify(order)
-    })
-    .then(response => response.json())
-    .then(data => {
-        console.log("Telegram:", data);
-    })
-    .catch(error => {
-        console.error("Ошибка отправки заказа в Telegram:", error);
-    });
+        const data = await response.json();
+
+        if (!response.ok || !data.ok || data.number === undefined || data.number === null) {
+            throw new Error(data.error || "Не удалось создать заказ");
+        }
+
+        // Получаем настоящий номер из PostgreSQL и только после этого
+        // сохраняем заказ в локальную историю браузера.
+        order.number = String(data.number);
+
+        // Теперь заказ подтверждён сервером — фиксируем списание товара.
+        saveProducts(updatedProducts);
+
+        const orders = getOrders();
+        orders.push(order);
+        saveOrders(orders);
+
+        console.log("Заказ создан:", data);
+    } catch (error) {
+        console.error("Ошибка создания заказа:", error);
+
+        // Остатки ещё не сохранялись, поэтому при ошибке ничего откатывать не нужно.
+        alert("Не удалось оформить заказ. Попробуй ещё раз.\n\n" + error.message);
+        return;
+    }
 
     if (appliedPromo) {
         const promoConfig = getPromoConfig();
